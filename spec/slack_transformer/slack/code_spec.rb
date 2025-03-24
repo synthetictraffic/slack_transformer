@@ -217,5 +217,35 @@ RSpec.describe SlackTransformer::Slack::Code do
         expect(transformation.to_html).to eq('<code>code code</code>')
       end
     end
+
+    context 'when using triple backticks for a multi-line code block' do
+      let(:input) do
+        <<~CODE
+          ```
+          def hello_world
+            puts "Hello, world!"
+          end
+          ```
+        CODE
+      end
+
+      it 'converts the triple-backtick code block to HTML' do
+        expect(transformation.to_html).to eq(<<~HTML.strip)
+          <pre><code>def hello_world
+            puts "Hello, world!"
+          end</code></pre>
+        HTML
+      end
+    end
+
+    context 'when there is a multi-line code block with triple backticks' do
+      let(:input) { "```\nline1\nline2\n```" }
+
+      it 'replaces ``` with <pre><code> and </code></pre> preserving newlines' do
+        expect(transformation.to_html).to eq("<pre><code>line1\nline2</code></pre>")
+      end
+    end
+
+
   end
 end
