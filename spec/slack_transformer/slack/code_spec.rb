@@ -246,6 +246,50 @@ RSpec.describe SlackTransformer::Slack::Code do
       end
     end
 
+    context 'when triple backticks appear inside a multi-line code block' do
+      let(:input) do
+        <<~CODE
+        # New pattern for multi-line code blocks
+        MULTILINE_PATTERN = /```\n(.*?)\n```/m
+
+        def initialize(input)
+          @input = input
+        end
+        CODE
+      end
+
+
+      it 'treats inner triple backticks as content and converts the full block to HTML' do
+        expect(transformation.to_html).to eq(<<~HTML.strip)
+          # New pattern for multi-line code blocks
+          MULTILINE_PATTERN = /```\n(.*?)\n```/m
+
+          def initialize(input)
+            @input = input
+          end
+        HTML
+      end
+    end
+
+    context 'when there is a code block with language specification and nested backticks' do
+      let(:input) do
+        <<~CODE
+        ```
+        hello
+        ```dsfsdf```
+        end
+        ```
+        CODE
+      end
+
+      it 'preserves the nested backticks in the code block' do
+        expect(transformation.to_html).to eq(<<~HTML.strip)
+        <pre><code>hello
+        ```dsfsdf```
+        end</code></pre>
+        HTML
+      end
+    end
 
   end
 end

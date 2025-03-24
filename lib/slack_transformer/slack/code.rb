@@ -18,23 +18,29 @@ module SlackTransformer
         # one or more of not ` preceded by ` followed by one or more `
       /x
 
-      # New pattern for multi-line code blocks
-      MULTILINE_PATTERN = /```\n(.*?)\n```/m
+      # New pattern for multi-line code blocks - Match only triple backticks at line start and end
+      MULTILINE_PATTERN = /^```\n(.*?)\n```$/m
 
       def initialize(input)
         @input = input
       end
 
       def to_html
-        # First, process multi-line code blocks
-        result = input.gsub(MULTILINE_PATTERN) do |_|
-          inner_text = Regexp.last_match(1)
-          # Ensure we don't have a trailing newline in the output
-          "<pre><code>#{inner_text}</code></pre>"
-        end.chomp
+        # Check if input is a complete multi-line code block
+        if input.strip =~ /^```\n.*\n```$/m
+          # Process as a complete multi-line code block
+          result = input.gsub(MULTILINE_PATTERN) do |_|
+            inner_text = Regexp.last_match(1)
+            # Ensure we don't have a trailing newline in the output
+            "<pre><code>#{inner_text}</code></pre>"
+          end.chomp
+        else
+          # Otherwise, handle as regular input
+          result = input.dup
+        end
 
         # Then, process inline code (using the original logic)
-        result.gsub(INLINE_PATTERN) do |match|
+        final_result = result.gsub(INLINE_PATTERN) do |match|
           closing_backticks = Regexp.last_match(2)
           closing_backticks_length = closing_backticks.length
           closing_backticks_remainder = closing_backticks_length % 3
@@ -49,6 +55,9 @@ module SlackTransformer
             "<code>#{inner_text}#{inner_trailing_backticks}</code>#{outer_trailing_backticks}"
           end
         end
+
+        # Ensure no trailing newline in the final result
+        final_result.chomp
       end
     end
   end
